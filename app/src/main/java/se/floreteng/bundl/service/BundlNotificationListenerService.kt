@@ -105,7 +105,23 @@ class BundlNotificationListenerService : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         super.onNotificationRemoved(sbn)
-        Log.d(TAG, "Notification removed: ${sbn.packageName}")
+        val packageName = sbn.packageName
+        Log.d(TAG, "Notification removed: $packageName")
+
+        // When the source app clears its notifications, we should update our bundled notification
+        scope.launch {
+            try {
+                val appConfig = database.appConfigDao().getAppConfig(packageName)
+                if (appConfig != null && appConfig.isEnabled) {
+                    // This is a managed app, check if we should update the bundled notification
+                    // We'll assume notifications were handled/cleared and mark old pending ones as delivered
+                    val bundleManager = se.floreteng.bundl.util.BundleNotificationManager(applicationContext)
+                    bundleManager.updateOrCancelBundledNotification(packageName)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating bundled notification", e)
+            }
+        }
     }
 
     override fun onListenerConnected() {

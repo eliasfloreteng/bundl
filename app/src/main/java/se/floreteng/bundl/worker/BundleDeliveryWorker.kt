@@ -24,6 +24,7 @@ class BundleDeliveryWorker(
 
     private val database = BundlDatabase.getDatabase(context)
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val bundleNotificationManager = se.floreteng.bundl.util.BundleNotificationManager(context)
 
     companion object {
         const val CHANNEL_ID = "bundl_delivery_channel"
@@ -51,8 +52,8 @@ class BundleDeliveryWorker(
                 .getPendingNotificationsByApp(appPackage)
 
             if (pendingNotifications.isNotEmpty()) {
-                // Create and show bundle notification for this app
-                showBundleNotification(
+                // Create and show bundle notification for this app using the manager
+                bundleNotificationManager.showOrUpdateBundleNotification(
                     appPackage = appPackage,
                     appName = pendingNotifications.first().appName,
                     count = pendingNotifications.size,
@@ -123,6 +124,8 @@ class BundleDeliveryWorker(
             .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setNumber(0)  // Don't show a badge number
+            .setOnlyAlertOnce(true)  // Only alert once, not on updates
 
         // Set large icon if available
         if (appIcon != null) {
