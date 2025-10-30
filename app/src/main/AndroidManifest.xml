@@ -48,6 +48,11 @@
                 <action android:name="se.floreteng.bundl.MARK_AS_READ" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".ScheduledDeliveryReceiver"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>
