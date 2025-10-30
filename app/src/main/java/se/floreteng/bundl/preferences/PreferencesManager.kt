@@ -15,6 +15,7 @@ class PreferencesManager(private val context: Context) {
 
     companion object {
         private val BUNDLING_ENABLED_KEY = booleanPreferencesKey("bundling_enabled")
+        private val HAS_REQUESTED_PERMISSION_KEY = booleanPreferencesKey("has_requested_permission")
     }
 
     val isBundlingEnabled: Flow<Boolean> = context.dataStore.data
@@ -22,9 +23,20 @@ class PreferencesManager(private val context: Context) {
             preferences[BUNDLING_ENABLED_KEY] ?: false
         }
 
+    val hasRequestedPermission: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[HAS_REQUESTED_PERMISSION_KEY] ?: false
+        }
+
     suspend fun setBundlingEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[BUNDLING_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun setHasRequestedPermission(hasRequested: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[HAS_REQUESTED_PERMISSION_KEY] = hasRequested
         }
     }
 }
