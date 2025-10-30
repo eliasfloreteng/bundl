@@ -27,9 +27,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
+import se.floreteng.bundl.utils.NotificationAccessUtil
 
 @Composable
 fun HomeScreen(
@@ -39,6 +42,18 @@ fun HomeScreen(
     val context = LocalContext.current
     val bundlingEnabled by viewModel.isBundlingEnabled.collectAsState()
     val shouldShowPermissionDialog by viewModel.shouldShowPermissionDialog.collectAsState()
+    val shouldShowNotificationPermissionDialog by viewModel.shouldShowNotificationPermissionDialog.collectAsState()
+
+    // Permission launcher for notification permission (Android 13+)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted, deliver notifications
+            viewModel.deliverAllNotifications(context)
+        }
+        viewModel.onNotificationPermissionDialogDismissed()
+    }
 
     // Monitor lifecycle to check permission state when returning from settings
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -102,7 +117,7 @@ fun HomeScreen(
 
             item {
                 Button(
-                    onClick = { viewModel.deliverAllNotifications(context) },
+                    onClick = { viewModel.onDeliverNotificationsClicked(context) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Deliver All Notifications")
@@ -110,12 +125,27 @@ fun HomeScreen(
             }
         }
 
-        // Permission Dialog
+        // Notification Listener Permission Dialog
         if (shouldShowPermissionDialog) {
             NotificationPermissionDialog(
                 onConfirm = { viewModel.onPermissionDialogConfirmed(context) },
                 onDismiss = { viewModel.onPermissionDialogDismissed() }
             )
+        }
+
+        // Notification Posting Permission Dialog
+        if (shouldShowNotificationPermissionDialog) {
+            val permission = NotificationAccessUtil.getNotificationPermission()
+            if (permission != null) {
+                NotificationPostPermissionDialog(
+                    onConfirm = {
+                        notificationPermissionLauncher.launch(permission)
+                    },
+                    onDismiss = {
+                        viewModel.onNotificationPermissionDialogDismissed()
+                    }
+                )
+            }
         }
     }
 }
@@ -161,6 +191,52 @@ private fun NotificationPermissionDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun NotificationPostPermissionDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Text(
+                text = "📬",
+                style = MaterialTheme.typography.headlineLarge
+            )
+        },
+        title = {
+            Text(
+                text = "Notification Permission Required",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "To deliver bundled notifications, Bundl needs permission to post notifications.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "This allows the app to show you summary notifications for the apps you've bundled.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Allow")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Not Now")
             }
         }
     )

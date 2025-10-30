@@ -30,6 +30,9 @@ class HomeViewModel(
     private val _shouldShowPermissionDialog = MutableStateFlow(false)
     val shouldShowPermissionDialog: StateFlow<Boolean> = _shouldShowPermissionDialog.asStateFlow()
 
+    private val _shouldShowNotificationPermissionDialog = MutableStateFlow(false)
+    val shouldShowNotificationPermissionDialog: StateFlow<Boolean> = _shouldShowNotificationPermissionDialog.asStateFlow()
+
     fun onBundlingToggled(enabled: Boolean, context: Context) {
         viewModelScope.launch {
             if (enabled) {
@@ -85,6 +88,25 @@ class HomeViewModel(
             }
 
         }
+    }
+
+    fun onDeliverNotificationsClicked(context: Context) {
+        viewModelScope.launch {
+            // Check if we have permission to post notifications
+            val hasPermission = NotificationAccessUtil.hasNotificationPermission(context)
+
+            if (!hasPermission) {
+                // Show permission dialog
+                _shouldShowNotificationPermissionDialog.value = true
+            } else {
+                // Has permission, deliver notifications
+                deliverAllNotifications(context)
+            }
+        }
+    }
+
+    fun onNotificationPermissionDialogDismissed() {
+        _shouldShowNotificationPermissionDialog.value = false
     }
 
     fun deliverAllNotifications(context: Context) {
