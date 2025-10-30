@@ -10,30 +10,18 @@ import android.util.Log
 import kotlinx.coroutines.launch
 
 class BundlNotificationListenerService : NotificationListenerService() {
-
-//    override fun onBind(intent: Intent): IBinder {
-//        TODO("Return the communication channel to the service.")
-//    }
-
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
 
-//        // Check if bundling is enabled
-//        if (!preferenceManager.isBundlingEnabled()) {
-//            Log.d("BundlNotificationListener", "Bundling is disabled, ignoring notification")
-//            return
-//        }
-
-        val packageName = sbn.packageName
-        Log.d("BundlNotificationListener", "Notification posted from: $packageName")
+        // TODO("Check if bundling is enabled on the main screen before proceeding")
 
         val notification = sbn.notification
         val extras = notification.extras
 
         val key = sbn.key
-        val id = sbn.id
         val tag = sbn.tag
         val postTime = sbn.postTime
+        val packageName = sbn.packageName
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
@@ -44,9 +32,9 @@ class BundlNotificationListenerService : NotificationListenerService() {
             "BundlNotificationListener",
             "Notification details:" +
                     "key=$key," +
-                    "id=$id," +
                     "tag=$tag," +
                     "postTime=$postTime," +
+                    "packageName=$packageName," +
                     "title=$title," +
                     "text=$text," +
                     "subText=$subText," +
@@ -54,35 +42,13 @@ class BundlNotificationListenerService : NotificationListenerService() {
                     "notificationTime=$notificationTime"
         )
 
-//        TODO("Change to 'sent you a Snap' and variable condition")
-//        if (text != null && text.contains("sent a Chat")) {
-//            cancelNotification(sbn.key)
-//        }
-
-//        cancelNotification(sbn.key)
+        // TODO("Implement actual check agains app rules from database")
+        // if (...) {
+        //     TODO("Add notification to database")
+        //     cancelNotification(sbn.key)
+        //     Log.d("BundlNotificationListener", "Notification canceled based on app rules")
+        // }
     }
-
-//    override fun onNotificationRemoved(sbn: StatusBarNotification) {
-//        super.onNotificationRemoved(sbn)
-//        val packageName = sbn.packageName
-//        Log.d(TAG, "Notification removed: $packageName")
-//
-//        // When the source app clears its notifications, we should update our bundled notification
-//        scope.launch {
-//            try {
-//                val appConfig = database.appConfigDao().getAppConfig(packageName)
-//                if (appConfig != null && appConfig.isEnabled) {
-//                    // This is a managed app, check if we should update the bundled notification
-//                    // We'll assume notifications were handled/cleared and mark old pending ones as delivered
-//                    val bundleManager =
-//                        se.floreteng.bundl.util.BundleNotificationManager(applicationContext)
-//                    bundleManager.updateOrCancelBundledNotification(packageName)
-//                }
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Error updating bundled notification", e)
-//            }
-//        }
-//    }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
