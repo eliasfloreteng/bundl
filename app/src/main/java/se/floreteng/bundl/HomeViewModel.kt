@@ -70,18 +70,17 @@ class HomeViewModel(
         viewModelScope.launch {
             // Check if bundling should be enabled based on actual permission
             val hasAccess = NotificationAccessUtil.hasNotificationAccess(context)
-            val isEnabled = isBundlingEnabled.value
-
-            if (isEnabled && !hasAccess) {
-                // Was enabled but permission was revoked
-                preferencesManager.setBundlingEnabled(false)
-            } else if (!isEnabled && hasAccess) {
-                val hasRequestedBefore = preferencesManager.hasRequestedPermission.first()
-                if (hasRequestedBefore) {
-                    // Permission was granted, enable bundling
-                    preferencesManager.setBundlingEnabled(true)
+            
+            if (!hasAccess) {
+                preferencesManager.setHasRequestedPermission(false)
+                
+                val isEnabled = isBundlingEnabled.value
+                if (isEnabled) {
+                    // Was enabled but permission was revoked
+                    preferencesManager.setBundlingEnabled(false)
                 }
             }
+
         }
     }
 }
