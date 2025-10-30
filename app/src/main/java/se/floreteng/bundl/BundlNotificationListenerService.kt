@@ -12,11 +12,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class BundlNotificationListenerService : NotificationListenerService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var database: BundlDatabase
+    private lateinit var preferencesManager: se.floreteng.bundl.preferences.PreferencesManager
 
     override fun onCreate() {
         super.onCreate()
@@ -25,12 +27,25 @@ class BundlNotificationListenerService : NotificationListenerService() {
             BundlDatabase::class.java,
             "bundl_database"
         ).build()
+        preferencesManager = se.floreteng.bundl.preferences.PreferencesManager(applicationContext)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
 
-        // TODO("Check if bundling is enabled on the main screen before proceeding")
+        serviceScope.launch {
+            // Check if bundling is enabled
+            val isBundlingEnabled = preferencesManager.isBundlingEnabled.first()
+            if (!isBundlingEnabled) {
+                Log.d("BundlNotificationListener", "Bundling is disabled, skipping notification")
+                return@launch
+            }
+
+            processNotification(sbn)
+        }
+    }
+
+    private suspend fun processNotification(sbn: StatusBarNotification) {
 
         val notification = sbn.notification
         val extras = notification.extras
@@ -72,13 +87,11 @@ class BundlNotificationListenerService : NotificationListenerService() {
             notificationTime = notificationTime
         )
 
-        serviceScope.launch {
-            try {
-                database.notificationDao.insertNotification(notificationEntity)
-                Log.d("BundlNotificationListener", "Notification saved to database")
-            } catch (e: Exception) {
-                Log.e("BundlNotificationListener", "Error saving notification to database", e)
-            }
+        try {
+            database.notificationDao.insertNotification(notificationEntity)
+            Log.d("BundlNotificationListener", "Notification saved to database")
+        } catch (e: Exception) {
+            Log.e("BundlNotificationListener", "Error saving notification to database", e)
         }
 
         // TODO("Implement actual check against app rules from database")
