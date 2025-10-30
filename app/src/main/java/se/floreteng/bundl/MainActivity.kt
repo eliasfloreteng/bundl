@@ -17,7 +17,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.room.Room
+import se.floreteng.bundl.apprule.AppRuleRepository
+import se.floreteng.bundl.apprule.AppRuleViewModel
 import se.floreteng.bundl.ui.theme.BundlTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,6 +42,28 @@ class MainActivity : ComponentActivity() {
 @PreviewScreenSizes
 @Composable
 fun BundlApp() {
+    val context = LocalContext.current
+    val database = Room.databaseBuilder(
+        context,
+        BundlDatabase::class.java,
+        "bundl_database"
+    )
+        .allowMainThreadQueries()
+        // TODO("Remove before building production app")
+        .fallbackToDestructiveMigration(true)
+        .build()
+
+    val repository = AppRuleRepository(database.appRuleDao)
+    val viewModelFactory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(AppRuleViewModel::class.java)) {
+                return AppRuleViewModel(repository) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
+    }
+
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
 
     NavigationSuiteScaffold(
@@ -57,7 +86,9 @@ fun BundlApp() {
         when (currentDestination) {
             AppDestinations.HOME -> HomeScreen()
             AppDestinations.HISTORY -> HistoryScreen()
-            AppDestinations.SETTINGS -> SettingsScreen()
+            AppDestinations.SETTINGS -> SettingsScreen(
+                viewModel = viewModel(factory = viewModelFactory)
+            )
         }
     }
 }
