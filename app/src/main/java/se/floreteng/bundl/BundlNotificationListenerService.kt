@@ -7,9 +7,26 @@ import android.os.IBinder
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import androidx.room.Room
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 class BundlNotificationListenerService : NotificationListenerService() {
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private lateinit var database: BundlDatabase
+
+    override fun onCreate() {
+        super.onCreate()
+        database = Room.databaseBuilder(
+            applicationContext,
+            BundlDatabase::class.java,
+            "bundl_database"
+        ).build()
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
 
@@ -25,7 +42,7 @@ class BundlNotificationListenerService : NotificationListenerService() {
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
-        val category = notification.category
+        val category = notification.category ?: "unknown"
         val notificationTime = notification.`when`
 
         Log.d(
@@ -42,12 +59,38 @@ class BundlNotificationListenerService : NotificationListenerService() {
                     "notificationTime=$notificationTime"
         )
 
-        // TODO("Implement actual check agains app rules from database")
+        // Save notification to database
+        val notificationEntity = se.floreteng.bundl.notifications.Notification(
+            key = key,
+            tag = tag,
+            postTime = postTime,
+            packageName = packageName,
+            title = title,
+            text = text,
+            subText = subText,
+            category = category,
+            notificationTime = notificationTime
+        )
+
+        serviceScope.launch {
+            try {
+                database.notificationDao.insertNotification(notificationEntity)
+                Log.d("BundlNotificationListener", "Notification saved to database")
+            } catch (e: Exception) {
+                Log.e("BundlNotificationListener", "Error saving notification to database", e)
+            }
+        }
+
+        // TODO("Implement actual check against app rules from database")
         // if (...) {
-        //     TODO("Add notification to database")
         //     cancelNotification(sbn.key)
         //     Log.d("BundlNotificationListener", "Notification canceled based on app rules")
         // }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
     }
 
     override fun onListenerConnected() {
