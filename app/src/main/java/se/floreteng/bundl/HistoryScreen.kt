@@ -31,7 +31,10 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
     var notifications by remember { mutableStateOf(listOf<String>("hello", "test")) }
 
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
-        LazyColumn (modifier = modifier.padding(innerPadding)) {
+        LazyColumn(
+            modifier = modifier.padding(innerPadding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             items(notifications) { notification ->
                 Card {
                     Row(
