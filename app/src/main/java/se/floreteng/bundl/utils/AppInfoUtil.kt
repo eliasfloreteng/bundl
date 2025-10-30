@@ -14,14 +14,26 @@ data class AppInfo(
 object AppInfoUtil {
 
     /**
-     * Get list of all installed apps (excluding system apps)
+     * Get list of all installed apps (excluding system apps by default)
+     * A system app is one that was pre-installed and hasn't been updated by the user
      */
     fun getInstalledApps(context: Context, includeSystemApps: Boolean = false): List<AppInfo> {
         val packageManager = context.packageManager
         val packages = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
 
         return packages
-            .filter { includeSystemApps || (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
+            .filter { appInfo ->
+                if (includeSystemApps) {
+                    true
+                } else {
+                    // Include apps that are either:
+                    // 1. Not system apps at all
+                    // 2. System apps that have been updated (user-installed updates to system apps)
+                    val isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    val isUpdatedSystemApp = (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                    !isSystemApp || isUpdatedSystemApp
+                }
+            }
             .map { appInfo ->
                 AppInfo(
                     packageName = appInfo.packageName,
