@@ -161,7 +161,7 @@ private fun AppPickerDialog(
     onAppSelected: (se.floreteng.bundl.utils.AppInfo) -> Unit
 ) {
     val context = LocalContext.current
-    val installedApps = remember { AppInfoUtil.getInstalledApps(context, includeSystemApps = true) }
+    val installedApps = remember { AppInfoUtil.getInstalledApps(context, includeSystemApps = false) }
     var searchQuery by remember { mutableStateOf("") }
 
     val filteredApps = remember(searchQuery, installedApps) {

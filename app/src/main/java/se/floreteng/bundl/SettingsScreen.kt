@@ -26,6 +26,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,6 +34,7 @@ import se.floreteng.bundl.apprule.AppRule
 import se.floreteng.bundl.apprule.AppRuleDialog
 import se.floreteng.bundl.apprule.AppRuleEvent
 import se.floreteng.bundl.apprule.AppRuleViewModel
+import se.floreteng.bundl.utils.AppInfoUtil
 
 @Composable
 fun SettingsScreen(
@@ -110,6 +112,9 @@ private fun AppRuleItem(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val appName = AppInfoUtil.getAppName(context, appRule.packageName)
+
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -126,10 +131,17 @@ private fun AppRuleItem(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = appRule.packageName,
+                    text = appName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
+                if (appName != appRule.packageName) {
+                    Text(
+                        text = appRule.packageName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     text = "Mode: ${appRule.mode.name}",
                     style = MaterialTheme.typography.bodyMedium,
