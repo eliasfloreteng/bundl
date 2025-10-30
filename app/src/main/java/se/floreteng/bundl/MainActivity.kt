@@ -6,9 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -105,7 +105,7 @@ fun BundlApp() {
             AppDestinations.HISTORY -> HistoryScreen(
                 viewModel = viewModel(factory = viewModelFactory)
             )
-            AppDestinations.SETTINGS -> SettingsScreen(
+            AppDestinations.RULES -> SettingsScreen(
                 viewModel = viewModel(factory = viewModelFactory)
             )
         }
@@ -119,5 +119,5 @@ enum class AppDestinations(
 ) {
     HOME("Home", Icons.Default.Home),
     HISTORY("History", Icons.AutoMirrored.Default.List),
-    SETTINGS("Settings", Icons.Default.Settings),
+    RULES("Rules", Icons.Default.CheckCircle),
 }
