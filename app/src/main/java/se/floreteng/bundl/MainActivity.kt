@@ -28,6 +28,7 @@ import se.floreteng.bundl.apprule.AppRuleRepository
 import se.floreteng.bundl.apprule.AppRuleViewModel
 import se.floreteng.bundl.notifications.NotificationRepository
 import se.floreteng.bundl.notifications.NotificationViewModel
+import se.floreteng.bundl.preferences.PreferencesManager
 import se.floreteng.bundl.ui.theme.BundlTheme
 
 class MainActivity : ComponentActivity() {
@@ -58,6 +59,7 @@ fun BundlApp() {
 
     val appRuleRepository = AppRuleRepository(database.appRuleDao)
     val notificationRepository = NotificationRepository(database.notificationDao)
+    val preferencesManager = PreferencesManager(context)
 
     val viewModelFactory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -68,6 +70,9 @@ fun BundlApp() {
                 }
                 modelClass.isAssignableFrom(NotificationViewModel::class.java) -> {
                     NotificationViewModel(notificationRepository) as T
+                }
+                modelClass.isAssignableFrom(HomeViewModel::class.java) -> {
+                    HomeViewModel(preferencesManager) as T
                 }
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -94,7 +99,9 @@ fun BundlApp() {
         }
     ) {
         when (currentDestination) {
-            AppDestinations.HOME -> HomeScreen()
+            AppDestinations.HOME -> HomeScreen(
+                viewModel = viewModel(factory = viewModelFactory)
+            )
             AppDestinations.HISTORY -> HistoryScreen(
                 viewModel = viewModel(factory = viewModelFactory)
             )

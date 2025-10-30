@@ -13,18 +13,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
-    var bundlingActive by remember { mutableStateOf(false) }
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel = viewModel()
+) {
+    val bundlingEnabled by viewModel.isBundlingEnabled.collectAsState()
 
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
         LazyColumn(
@@ -50,14 +52,18 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = if (bundlingActive) "Active" else "Inactive",
+                                    text = if (bundlingEnabled) "Active" else "Inactive",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (bundlingEnabled) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
                                 )
                             }
                             Switch(
-                                checked = bundlingActive,
-                                onCheckedChange = { bundlingActive = !bundlingActive }
+                                checked = bundlingEnabled,
+                                onCheckedChange = { viewModel.setBundlingEnabled(it) }
                             )
                         }
                     }
