@@ -14,6 +14,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import se.floreteng.bundl.apprule.AppRule
+import se.floreteng.bundl.apprule.AppRuleMode
 
 class BundlNotificationListenerService : NotificationListenerService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -46,7 +48,6 @@ class BundlNotificationListenerService : NotificationListenerService() {
     }
 
     private suspend fun processNotification(sbn: StatusBarNotification) {
-
         val notification = sbn.notification
         val extras = notification.extras
 
@@ -62,43 +63,116 @@ class BundlNotificationListenerService : NotificationListenerService() {
 
         Log.d(
             "BundlNotificationListener",
-            "Notification details:" +
-                    "key=$key," +
-                    "tag=$tag," +
-                    "postTime=$postTime," +
-                    "packageName=$packageName," +
-                    "title=$title," +
-                    "text=$text," +
-                    "subText=$subText," +
-                    "category=$category," +
-                    "notificationTime=$notificationTime"
+            "Notification received: key=$key, package=$packageName, title=$title"
         )
 
-        // Save notification to database
-        val notificationEntity = se.floreteng.bundl.notifications.Notification(
-            key = key,
-            tag = tag,
-            postTime = postTime,
-            packageName = packageName,
-            title = title,
-            text = text,
-            subText = subText,
-            category = category,
-            notificationTime = notificationTime
-        )
+        // Load all app rules from database
+        val appRules = database.appRuleDao.getAppRules().first()
 
-        try {
-            database.notificationDao.insertNotification(notificationEntity)
-            Log.d("BundlNotificationListener", "Notification saved to database")
-        } catch (e: Exception) {
-            Log.e("BundlNotificationListener", "Error saving notification to database", e)
+        // Check if notification should be cancelled based on rules
+        val shouldCancel = shouldCancelNotification(packageName, title, text, subText, appRules)
+
+        if (shouldCancel) {
+            // Cancel the notification
+            cancelNotification(key)
+            Log.d("BundlNotificationListener", "Notification cancelled based on app rules")
+
+            // Save cancelled notification to database
+            val notificationEntity = se.floreteng.bundl.notifications.Notification(
+                key = key,
+                tag = tag,
+                postTime = postTime,
+                packageName = packageName,
+                title = title,
+                text = text,
+                subText = subText,
+                category = category,
+                notificationTime = notificationTime
+            )
+
+            try {
+                database.notificationDao.insertNotification(notificationEntity)
+                Log.d("BundlNotificationListener", "Cancelled notification saved to database")
+            } catch (e: Exception) {
+                Log.e("BundlNotificationListener", "Error saving notification to database", e)
+            }
+        } else {
+            Log.d("BundlNotificationListener", "Notification allowed through (no matching rules)")
+        }
+    }
+
+    /**
+     * Determines if a notification should be cancelled based on app rules
+     *
+     * BLACKLIST mode: Cancel if package matches AND (no filter OR filter matches)
+     * WHITELIST mode: Allow ONLY if package matches AND (no filter OR filter matches)
+     */
+    private fun shouldCancelNotification(
+        packageName: String,
+        title: String?,
+        text: String?,
+        subText: String?,
+        appRules: List<AppRule>
+    ): Boolean {
+        // Find rules for this package
+        val matchingRules = appRules.filter { it.packageName == packageName }
+
+        if (matchingRules.isEmpty()) {
+            // No rules for this package
+            return false
         }
 
-        // TODO("Implement actual check against app rules from database")
-        // if (...) {
-        //     cancelNotification(sbn.key)
-        //     Log.d("BundlNotificationListener", "Notification canceled based on app rules")
-        // }
+        for (rule in matchingRules) {
+            val filterMatches = if (rule.filterString.isNullOrBlank()) {
+                // No filter means rule applies to all notifications from this package
+                true
+            } else {
+                // Check if filter string appears in title, text, or subtext
+                val filter = rule.filterString.lowercase()
+                val titleLower = title?.lowercase() ?: ""
+                val textLower = text?.lowercase() ?: ""
+                val subTextLower = subText?.lowercase() ?: ""
+
+                titleLower.contains(filter) ||
+                        textLower.contains(filter) ||
+                        subTextLower.contains(filter)
+            }
+
+            when (rule.mode) {
+                AppRuleMode.BLACKLIST -> {
+                    // Cancel if package matches and filter matches (or no filter)
+                    if (filterMatches) {
+                        Log.d(
+                            "BundlNotificationListener",
+                            "BLACKLIST rule matched: package=$packageName, filter=${rule.filterString}"
+                        )
+                        return true
+                    }
+                }
+                AppRuleMode.WHITELIST -> {
+                    // Allow if package matches and filter matches (or no filter)
+                    if (filterMatches) {
+                        Log.d(
+                            "BundlNotificationListener",
+                            "WHITELIST rule matched: package=$packageName, filter=${rule.filterString}"
+                        )
+                        return false // Don't cancel - whitelist allows it through
+                    }
+                }
+            }
+        }
+
+        // If we have WHITELIST rules but none matched, cancel the notification
+        val hasWhitelistRules = matchingRules.any { it.mode == AppRuleMode.WHITELIST }
+        if (hasWhitelistRules) {
+            Log.d(
+                "BundlNotificationListener",
+                "WHITELIST rules exist but didn't match: package=$packageName"
+            )
+            return true // Cancel because whitelist didn't match
+        }
+
+        return false
     }
 
     override fun onDestroy() {
