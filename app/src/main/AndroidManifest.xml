@@ -39,6 +39,15 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".NotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="se.floreteng.bundl.MARK_AS_READ" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
+import se.floreteng.bundl.NotificationActionReceiver
 import se.floreteng.bundl.R
 import se.floreteng.bundl.notifications.Notification
 
@@ -48,7 +49,7 @@ object NotificationDeliveryUtil {
 
             // Create intent to open the app
             val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
-            val pendingIntent = if (launchIntent != null) {
+            val contentPendingIntent = if (launchIntent != null) {
                 PendingIntent.getActivity(
                     context,
                     notificationId,
@@ -59,6 +60,18 @@ object NotificationDeliveryUtil {
                 null
             }
 
+            // Create intent for "Mark as Read" action
+            val markAsReadIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                action = NotificationActionReceiver.ACTION_MARK_AS_READ
+                putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            }
+            val markAsReadPendingIntent = PendingIntent.getBroadcast(
+                context,
+                notificationId,
+                markAsReadIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
             // Build summary notification
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -66,10 +79,15 @@ object NotificationDeliveryUtil {
                 .setContentText(buildSummaryText(notifications))
                 .setStyle(buildInboxStyle(notifications, appName))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true)
+                .setAutoCancel(false) // Don't dismiss on tap
+                .addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Mark as Read",
+                    markAsReadPendingIntent
+                )
                 .apply {
-                    if (pendingIntent != null) {
-                        setContentIntent(pendingIntent)
+                    if (contentPendingIntent != null) {
+                        setContentIntent(contentPendingIntent)
                     }
                 }
                 .build()
