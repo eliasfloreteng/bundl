@@ -30,15 +30,28 @@ class BundlNotificationListenerService : NotificationListenerService() {
         val notification = sbn.notification
         val extras = notification.extras
 
-        // Extract notification details
+        val key = sbn.key
+        val id = sbn.id
+        val tag = sbn.tag
+        val postTime = sbn.postTime
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
         val category = notification.category
+        val notificationTime = notification.`when`
 
         Log.d(
             "BundlNotificationListener",
-            "Notification details: title=$title, text=$text, subText=$subText, category=$category"
+            "Notification details:" +
+                    "key=$key," +
+                    "id=$id," +
+                    "tag=$tag," +
+                    "postTime=$postTime," +
+                    "title=$title," +
+                    "text=$text," +
+                    "subText=$subText," +
+                    "category=$category," +
+                    "notificationTime=$notificationTime"
         )
 
 //        TODO("Change to 'sent you a Snap' and variable condition")
