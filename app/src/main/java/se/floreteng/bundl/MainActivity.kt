@@ -25,6 +25,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import se.floreteng.bundl.apprule.AppRuleRepository
 import se.floreteng.bundl.apprule.AppRuleViewModel
+import se.floreteng.bundl.notifications.NotificationRepository
+import se.floreteng.bundl.notifications.NotificationViewModel
 import se.floreteng.bundl.ui.theme.BundlTheme
 
 class MainActivity : ComponentActivity() {
@@ -53,14 +55,21 @@ fun BundlApp() {
         .fallbackToDestructiveMigration(true)
         .build()
 
-    val repository = AppRuleRepository(database.appRuleDao)
+    val appRuleRepository = AppRuleRepository(database.appRuleDao)
+    val notificationRepository = NotificationRepository(database.notificationDao)
+
     val viewModelFactory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(AppRuleViewModel::class.java)) {
-                return AppRuleViewModel(repository) as T
+            return when {
+                modelClass.isAssignableFrom(AppRuleViewModel::class.java) -> {
+                    AppRuleViewModel(appRuleRepository) as T
+                }
+                modelClass.isAssignableFrom(NotificationViewModel::class.java) -> {
+                    NotificationViewModel(notificationRepository) as T
+                }
+                else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
-            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 
@@ -85,7 +94,9 @@ fun BundlApp() {
     ) {
         when (currentDestination) {
             AppDestinations.HOME -> HomeScreen()
-            AppDestinations.HISTORY -> HistoryScreen()
+            AppDestinations.HISTORY -> HistoryScreen(
+                viewModel = viewModel(factory = viewModelFactory)
+            )
             AppDestinations.SETTINGS -> SettingsScreen(
                 viewModel = viewModel(factory = viewModelFactory)
             )
