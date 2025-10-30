@@ -7,8 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -29,6 +29,8 @@ import se.floreteng.bundl.apprule.AppRuleViewModel
 import se.floreteng.bundl.notifications.NotificationRepository
 import se.floreteng.bundl.notifications.NotificationViewModel
 import se.floreteng.bundl.preferences.PreferencesManager
+import se.floreteng.bundl.schedule.ScheduleRepository
+import se.floreteng.bundl.schedule.ScheduleViewModel
 import se.floreteng.bundl.ui.theme.BundlTheme
 
 class MainActivity : ComponentActivity() {
@@ -59,6 +61,7 @@ fun BundlApp() {
 
     val appRuleRepository = AppRuleRepository(database.appRuleDao)
     val notificationRepository = NotificationRepository(database.notificationDao)
+    val scheduleRepository = ScheduleRepository(database.scheduleDao)
     val preferencesManager = PreferencesManager(context)
 
     val viewModelFactory = object : ViewModelProvider.Factory {
@@ -73,6 +76,9 @@ fun BundlApp() {
                 }
                 modelClass.isAssignableFrom(HomeViewModel::class.java) -> {
                     HomeViewModel(preferencesManager, notificationRepository) as T
+                }
+                modelClass.isAssignableFrom(ScheduleViewModel::class.java) -> {
+                    ScheduleViewModel(scheduleRepository) as T
                 }
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -102,6 +108,9 @@ fun BundlApp() {
             AppDestinations.HOME -> HomeScreen(
                 viewModel = viewModel(factory = viewModelFactory)
             )
+            AppDestinations.SCHEDULE -> ScheduleScreen(
+                viewModel = viewModel(factory = viewModelFactory)
+            )
             AppDestinations.HISTORY -> HistoryScreen(
                 viewModel = viewModel(factory = viewModelFactory)
             )
@@ -118,6 +127,7 @@ enum class AppDestinations(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Default.Home),
+    SCHEDULE("Schedule", Icons.Default.DateRange),
     HISTORY("History", Icons.AutoMirrored.Default.List),
     RULES("Rules", Icons.Default.CheckCircle),
 }
