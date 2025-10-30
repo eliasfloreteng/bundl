@@ -1,9 +1,13 @@
 package se.floreteng.bundl
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CheckCircle
@@ -13,8 +17,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -32,6 +38,7 @@ import se.floreteng.bundl.preferences.PreferencesManager
 import se.floreteng.bundl.schedule.ScheduleRepository
 import se.floreteng.bundl.schedule.ScheduleViewModel
 import se.floreteng.bundl.ui.theme.BundlTheme
+import se.floreteng.bundl.utils.NotificationAccessUtil
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +70,24 @@ fun BundlApp() {
     val notificationRepository = NotificationRepository(database.notificationDao)
     val scheduleRepository = ScheduleRepository(database.scheduleDao)
     val preferencesManager = PreferencesManager(context)
+
+    // Request notification permission on first launch (Android 13+)
+    var hasAskedForPermission by remember { mutableStateOf(false) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        // Permission result handled, no action needed
+        hasAskedForPermission = true
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!NotificationAccessUtil.hasNotificationPermission(context) && !hasAskedForPermission) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                hasAskedForPermission = true
+            }
+        }
+    }
 
     val viewModelFactory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
