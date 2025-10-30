@@ -10,11 +10,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import se.floreteng.bundl.notifications.NotificationRepository
 import se.floreteng.bundl.preferences.PreferencesManager
 import se.floreteng.bundl.utils.NotificationAccessUtil
+import se.floreteng.bundl.utils.NotificationDeliveryUtil
 
 class HomeViewModel(
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
 
     val isBundlingEnabled: StateFlow<Boolean> = preferencesManager.isBundlingEnabled
@@ -70,10 +73,10 @@ class HomeViewModel(
         viewModelScope.launch {
             // Check if bundling should be enabled based on actual permission
             val hasAccess = NotificationAccessUtil.hasNotificationAccess(context)
-            
+
             if (!hasAccess) {
                 preferencesManager.setHasRequestedPermission(false)
-                
+
                 val isEnabled = isBundlingEnabled.value
                 if (isEnabled) {
                     // Was enabled but permission was revoked
@@ -81,6 +84,26 @@ class HomeViewModel(
                 }
             }
 
+        }
+    }
+
+    fun deliverAllNotifications(context: Context) {
+        viewModelScope.launch {
+            // Get all notifications from database
+            val allNotifications = notificationRepository.getAllNotifications().first()
+
+            if (allNotifications.isEmpty()) {
+                return@launch
+            }
+
+            // Group notifications by package name
+            val notificationsByApp = allNotifications.groupBy { it.packageName }
+
+            // Deliver bundled notifications
+            NotificationDeliveryUtil.deliverBundledNotifications(context, notificationsByApp)
+
+            // Clear delivered notifications from database
+            notificationRepository.deleteAllNotifications()
         }
     }
 }

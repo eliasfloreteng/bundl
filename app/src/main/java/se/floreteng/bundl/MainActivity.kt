@@ -72,7 +72,7 @@ fun BundlApp() {
                     NotificationViewModel(notificationRepository) as T
                 }
                 modelClass.isAssignableFrom(HomeViewModel::class.java) -> {
-                    HomeViewModel(preferencesManager) as T
+                    HomeViewModel(preferencesManager, notificationRepository) as T
                 }
                 else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
