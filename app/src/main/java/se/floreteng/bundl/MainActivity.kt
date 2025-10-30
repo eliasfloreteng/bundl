@@ -68,6 +68,6 @@ enum class AppDestinations(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Default.Home),
-    HISTORY("History", Icons.Default.List),
+    HISTORY("History", Icons.AutoMirrored.Default.List),
     SETTINGS("Settings", Icons.Default.Settings),
 }
