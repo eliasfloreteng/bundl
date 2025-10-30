@@ -74,7 +74,7 @@ object NotificationDeliveryUtil {
 
             // Build summary notification
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(android.R.drawable.ic_popup_reminder)
                 .setContentTitle("$appName (${notifications.size})")
                 .setContentText(buildSummaryText(notifications))
                 .setStyle(buildInboxStyle(notifications, appName))
